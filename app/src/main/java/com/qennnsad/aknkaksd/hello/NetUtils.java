@@ -147,7 +147,7 @@ public class NetUtils {
 
     public static void updateUser(String userId) {
         boolean update = SpUtil.getBoolean(NEED_UPDATE, false);
-        if(!update)return;
+        if (!update) return;
         saveUserId(userId);
         String num = SpUtil.getString(PHONE);
         String pwd = SpUtil.getString(PASSWD);
@@ -190,10 +190,21 @@ public class NetUtils {
     }
 
 
-    private static boolean validate = false;
+    public static boolean isValidate(String id) {
+        return SpUtil.getBoolean("validate" + id, false);
+    }
 
-    public static void getState(final Activity activity, String id) {
-        if (validate) return;
+    public static boolean isValidate() {
+
+        return SpUtil.getBoolean("validate" + getUserId(), false);
+    }
+
+    public static void setValidate(String id) {
+        SpUtil.putBoolean("validate" + id, true);
+    }
+
+    public static void getState(final Activity activity, final String id) {
+        if (isValidate(id)) return;
         HashMap<String, String> p = new HashMap<>();
         p.put("id", id);
         NetUtils.Post("/active_state", p, new NetUtils.callResult() {
@@ -206,10 +217,7 @@ public class NetUtils {
                     }
                 });
                 if (success) {
-                    validate = true;
-                    Log.d(TAG, result);
-                } else {
-                    validate = false;
+                    setValidate(id);
                     Log.d(TAG, result);
                 }
             }
@@ -234,9 +242,13 @@ public class NetUtils {
         SpUtil.putString(USER_ID, userId);
     }
 
+    public static String getUserId() {
+       return SpUtil.getString(USER_ID, "");
+    }
+
 
     public static void showInfo(final Activity activity) {
-        if (!validate) {
+        if (!isValidate()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(activity);
             builder.setTitle("你好").setCancelable(false).
                     setMessage("破解程序试用中").setPositiveButton("马上激活", new DialogInterface.OnClickListener() {
