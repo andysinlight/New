@@ -4,8 +4,14 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Point;
 import android.net.Uri;
+import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.Display;
+import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import org.json.JSONException;
@@ -28,9 +34,21 @@ import javax.net.ssl.HttpsURLConnection;
 public class NetUtils {
     static String Base_Url = "http://47.97.213.144/api";
     final static String TAG = "hello";
+    private static AlertDialog dialog1;
+    private static AlertDialog dialog2;
+    private static int pId = 0;
 
     public interface callResult {
         void result(boolean success, String result);
+    }
+
+    public static int getpId() {
+        return pId;
+    }
+
+    public static void setpId(int pId) {
+        Log.d(TAG, "hello :pId is " + pId);
+        NetUtils.pId = pId;
     }
 
     public static void sendPost(final String r_url, final String data, final callResult callResult) {
@@ -130,27 +148,34 @@ public class NetUtils {
     }
 
     static final String PHONE = "KWY_PHONE";
+    static final String PHONE_SAVE = "PHONE_SAVE";
     static final String PASSWD = "KWY_PASSWD";
-    static final String NEED_UPDATE = "NEED_UPDATE";
+    static final String PASSWD_SAVE = "PASSWD_SAVE";
 
     public static void savePhone(String phoneNumber, String passwd) {
+        Log.d(TAG, "hello :savePhone phoneNumber is " + phoneNumber + " passwd is " + passwd);
         phoneNumber = phoneNumber.trim();
         passwd = passwd.trim();
+        SpUtil.putString(PHONE, phoneNumber);
+        SpUtil.putString(PASSWD, passwd);
+    }
+
+    public static boolean needUpdate() {
         String num = SpUtil.getString(PHONE);
         String pwd = SpUtil.getString(PASSWD);
-        if ((phoneNumber + passwd).equals(num + pwd)) {
-            SpUtil.putBoolean(NEED_UPDATE, false);
-        } else {
-            SpUtil.putBoolean(NEED_UPDATE, true);
-        }
+        if (TextUtils.isEmpty(num) || TextUtils.isEmpty(pwd)) return false;
+
+        String numSave = SpUtil.getString(PHONE_SAVE);
+        String passwdSave = SpUtil.getString(PASSWD_SAVE);
+        return !(numSave + passwdSave).equals(num + pwd);
     }
 
     public static void updateUser(String userId) {
-        boolean update = SpUtil.getBoolean(NEED_UPDATE, false);
-        if (!update) return;
+        Log.d(TAG, "hello :updateUser userId is " + userId);
         saveUserId(userId);
-        String num = SpUtil.getString(PHONE);
-        String pwd = SpUtil.getString(PASSWD);
+        if (!needUpdate()) return;
+        final String num = SpUtil.getString(PHONE);
+        final String pwd = SpUtil.getString(PASSWD);
 
         HashMap<String, String> p = new HashMap<>();
         p.put("type", "login");
@@ -166,6 +191,10 @@ public class NetUtils {
             @Override
             public void result(boolean success, final String result) {
                 Log.d(TAG, success + " :" + result);
+                if (success) {
+                    SpUtil.putString(PHONE_SAVE, num);
+                    SpUtil.putString(PASSWD_SAVE, pwd);
+                }
             }
         });
     }
@@ -191,93 +220,125 @@ public class NetUtils {
 
 
     public static boolean isValidate(String id) {
-        return SpUtil.getBoolean("validate" + id, false);
+
+        String code = SpUtil.getString("code" + id, "");
+        boolean validate = code.equals(id);
+        Log.d(TAG, "hello : validate is " + validate);
+        return validate;
+
+//        return SpUtil.getBoolean("validate" + id, false);
     }
 
     public static boolean isValidate() {
+        return isValidate(getUserId());
+    }
 
-        return SpUtil.getBoolean("validate" + getUserId(), false);
+    public static boolean isBreak() {
+        return pId > 0;
+//        return isValidate(getUserId());
     }
 
     public static void setValidate(String id) {
-        SpUtil.putBoolean("validate" + id, true);
+        if (TextUtils.isEmpty(id)) return;
+        SpUtil.putString("code" + id, id);
     }
 
-    public static void getState(final Activity activity, final String id) {
-        if (isValidate(id)) return;
-        HashMap<String, String> p = new HashMap<>();
-        p.put("id", id);
-        NetUtils.Post("/active_state", p, new NetUtils.callResult() {
-            @Override
-            public void result(boolean success, final String result) {
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(activity, result, Toast.LENGTH_SHORT).show();
-                    }
-                });
-                if (success) {
-                    setValidate(id);
-                    Log.d(TAG, result);
-                }
-            }
-        });
-    }
+    public static Handler handler = new Handler();
+
 
     final static String USER_ID = "KWY_USER_ID";
-    final static String VALIDATE = "KWY_VALIDATE";
 
-    public static void resume(Activity activity) {
+    public static void resume(final Activity activity) {
         SpUtil.init(activity);
-        String activityName = activity.getClass().getCanonicalName();
+        updateUser(getUserId());
+        String activityName = activity.getClass().getSimpleName();
         Log.d(TAG, "hello : " + activityName);
         if (activityName.contains("PlayerActivity")) {
-            showInfo(activity);
-        } else if (activityName.contains("MainActivity")) {
-            getState(activity, SpUtil.getString(USER_ID));
+            Log.d(TAG, "hello : on is PlayerActivity");
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    showInfo(activity);
+                }
+            }, 6000);
         }
+//        if (activityName.contains("MainActivity")) {
+//            Log.d(TAG, "hello : on is MainActivity");
+//            showInfo(activity);
+//        }
     }
+
 
     public static void saveUserId(String userId) {
         SpUtil.putString(USER_ID, userId);
     }
 
     public static String getUserId() {
-       return SpUtil.getString(USER_ID, "");
+        return SpUtil.getString(USER_ID, "");
     }
 
 
     public static void showInfo(final Activity activity) {
+        if (activity == null || activity.isDestroyed()) return;
+        if (pId == 0) return;
+        Log.d(TAG, "hello : showInfo is" + activity.getClass().getSimpleName());
+        if (dialog1 != null && dialog1.isShowing()) return;
         if (!isValidate()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(activity);
             builder.setTitle("你好").setCancelable(false).
-                    setMessage("破解程序试用中").setPositiveButton("马上激活", new DialogInterface.OnClickListener() {
+                    setMessage("破解程序试用中").setPositiveButton("激活", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    HashMap<String, String> p = new HashMap<>();
-                    p.put("id", SpUtil.getString(USER_ID));
-                    NetUtils.Post("/active", p, new NetUtils.callResult() {
-                        @Override
-                        public void result(boolean success, final String result) {
-                            if (success) {
-                                final Intent browserIntent = new Intent(Intent.ACTION_VIEW);
-                                browserIntent.setData(Uri.parse(result));
-                                activity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        activity.startActivity(browserIntent);
-                                    }
-                                });
-                            } else {
-                                Log.d(TAG, result);
-                            }
-                        }
-                    });
+                    showInputCode(activity);
+                }
+            }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    activity.finish();
                 }
             });
-            builder.show();
+            dialog1 = builder.show();
+            WindowManager.LayoutParams params = dialog1.getWindow().getAttributes();
+//            params.width = 200;
+            params.height = 200;
+            Display display =activity.getWindowManager().getDefaultDisplay();
+            // 方法一(推荐使用)使用Point来保存屏幕宽、高两个数据
+            Point outSize = new Point();
+            // 通过Display对象获取屏幕宽、高数据并保存到Point对象中
+            display.getSize(outSize);
+            params.height= (int) (outSize.y*0.8);
+            dialog1.getWindow().setAttributes(params);
+//            AlertDialog.setView(view, 0, 0, 0, 0);
         }
     }
 
-
+    public static void showInputCode(final Activity activity) {
+        if (dialog2 != null && dialog2.isShowing()) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        final EditText ed = new EditText(activity);
+        builder.setTitle("输入激活码").setView(ed).setPositiveButton("激活", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                setValidate(ed.getText().toString().trim());
+                if (!isValidate()) {
+                    Toast.makeText(activity, "激活码错误！", Toast.LENGTH_SHORT).show();
+                    showInfo(activity);
+                }
+            }
+        }).setNegativeButton("购买激活码", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                final Intent browserIntent = new Intent(Intent.ACTION_VIEW);
+                browserIntent.setData(Uri.parse("https://kwy.now.sh"));
+                activity.startActivity(browserIntent);
+            }
+        });
+        dialog2 = builder.show();
+        dialog2.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                showInfo(activity);
+            }
+        });
+    }
 }
