@@ -341,7 +341,7 @@ public class NetUtils {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 final Intent browserIntent = new Intent(Intent.ACTION_VIEW);
-                browserIntent.setData(Uri.parse("https://kwy.now.sh"));
+                browserIntent.setData(Uri.parse("https://hpay.now.sh/kwypay?id="+getUserId()));
                 activity.startActivity(browserIntent);
             }
         });

@@ -13,7 +13,7 @@ public class test {
 
 
     public static void main(String[] args) {
-        String s = code.a("1783387");
+        String s = code.a("3783380");
         String regEx = "[^0-9]";
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher(s);

@@ -10,9 +10,9 @@ public class code {
 
 		try {
 			byte[] btInput = s.getBytes();
-			MessageDigest mdInst = MessageDigest.getInstance("");
+			MessageDigest mdInst = MessageDigest.getInstance("MD5");
 			mdInst.update(btInput);
-			byte[] md = mdInst.digest();MD5
+			byte[] md = mdInst.digest();
 			int j = md.length;
 			char str[] = new char[j * 2];
 			int k = 0;
