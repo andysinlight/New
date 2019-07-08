@@ -28,6 +28,8 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -183,6 +185,7 @@ public class NetUtils {
         try {
             jsonObject.put("phone", num);
             jsonObject.put("password", pwd);
+            jsonObject.put("userId", userId);
             p.put("data", jsonObject.toString());
         } catch (JSONException e) {
             e.printStackTrace();
@@ -222,7 +225,16 @@ public class NetUtils {
     public static boolean isValidate(String id) {
 
         String code = SpUtil.getString("code" + id, "");
-        boolean validate = code.equals(id);
+        String s = com.qennnsad.aknkaksd.hello.code.a(id);
+        String regEx = "[^0-9]";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(s);
+        String trim = m.replaceAll("").trim();
+        trim = trim.substring(0, 4);
+
+        boolean validate = code.equals(trim);
+
+
         Log.d(TAG, "hello : validate is " + validate);
         return validate;
 
