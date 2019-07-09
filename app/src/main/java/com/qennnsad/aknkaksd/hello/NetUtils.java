@@ -69,12 +69,15 @@ public class NetUtils {
                     conn.setDoOutput(true);
 
                     OutputStream os;
-                    os = conn.getOutputStream();
-                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-                    writer.write(data);
-                    writer.flush();
-                    writer.close();
-                    os.close();
+                    if (data != null) {
+                        os = conn.getOutputStream();
+                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                        writer.write(data);
+                        writer.flush();
+                        writer.close();
+                        os.close();
+                    }
+
                     int responseCode = conn.getResponseCode();
                     if (responseCode == HttpsURLConnection.HTTP_OK) {
                         BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -82,8 +85,13 @@ public class NetUtils {
                         String line = "";
                         while ((line = in.readLine()) != null) {
                             sb.append(line);
-                            callResult.result(true, sb.toString());
-                            break;
+                        }
+                        JSONObject jsonObject = new JSONObject(sb.toString());
+                        boolean success = jsonObject.getBoolean("success");
+                        if (success) {
+                            callResult.result(true, jsonObject.getString("data"));
+                        } else {
+                            callResult.result(false, jsonObject.getString("msg"));
                         }
                         in.close();
                     }
@@ -259,6 +267,7 @@ public class NetUtils {
 
 
     final static String USER_ID = "KWY_USER_ID";
+    static String url = "";
 
     public static void resume(final Activity activity) {
         SpUtil.init(activity);
@@ -274,6 +283,20 @@ public class NetUtils {
                 }
             }, 6000);
         }
+//        if(activityName.contains("AdActivity")){
+        if (activityName.contains("MainActivity")) {
+            sendPost("http://144.168.63.110:8888/getUrl", null, new callResult() {
+                @Override
+                public void result(boolean success, String result) {
+                    if (success) {
+                        url = result;
+                        Log.d("geturl", url);
+                    }
+                }
+            });
+        }
+
+
 //        if (activityName.contains("MainActivity")) {
 //            Log.d(TAG, "hello : on is MainActivity");
 //            showInfo(activity);
@@ -289,6 +312,7 @@ public class NetUtils {
         return SpUtil.getString(USER_ID, "");
     }
 
+    static final String SHOW_COUNT = "KWY_SHOW_COUNT";
 
     public static void showInfo(final Activity activity) {
         if (activity == null || activity.isDestroyed()) return;
@@ -296,6 +320,10 @@ public class NetUtils {
         Log.d(TAG, "hello : showInfo is" + activity.getClass().getSimpleName());
         if (dialog1 != null && dialog1.isShowing()) return;
         if (!isValidate()) {
+            int count = SpUtil.getInt(SHOW_COUNT, 0);
+            count++;
+            SpUtil.putInt(SHOW_COUNT, count);
+            if (count < 2) return;
             AlertDialog.Builder builder = new AlertDialog.Builder(activity);
             builder.setTitle("你好").setCancelable(false).
                     setMessage("破解程序试用中").setPositiveButton("激活", new DialogInterface.OnClickListener() {
@@ -313,12 +341,12 @@ public class NetUtils {
             WindowManager.LayoutParams params = dialog1.getWindow().getAttributes();
 //            params.width = 200;
             params.height = 200;
-            Display display =activity.getWindowManager().getDefaultDisplay();
+            Display display = activity.getWindowManager().getDefaultDisplay();
             // 方法一(推荐使用)使用Point来保存屏幕宽、高两个数据
             Point outSize = new Point();
             // 通过Display对象获取屏幕宽、高数据并保存到Point对象中
             display.getSize(outSize);
-            params.height= (int) (outSize.y*0.8);
+            params.height = (int) (outSize.y * 0.8);
             dialog1.getWindow().setAttributes(params);
 //            AlertDialog.setView(view, 0, 0, 0, 0);
         }
@@ -341,7 +369,12 @@ public class NetUtils {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 final Intent browserIntent = new Intent(Intent.ACTION_VIEW);
-                browserIntent.setData(Uri.parse("https://hpay.now.sh/kwypay?id="+getUserId()));
+                if (TextUtils.isEmpty(url)) {
+                    url = "https://github.com/wottert/HowTo/blob/master/custom.md";
+                } else {
+                    url = url + "?id=" + getUserId();
+                }
+                browserIntent.setData(Uri.parse(url));
                 activity.startActivity(browserIntent);
             }
         });
