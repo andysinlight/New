@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 
 public class NetUtils {
-    static String Base_Url = "http://47.97.213.144/api";
+    static String Base_Url = "http://api.4kwy.top";
     final static String TAG = "hello";
     private static AlertDialog dialog1;
     private static AlertDialog dialog2;
@@ -283,24 +283,6 @@ public class NetUtils {
                 }
             }, 6000);
         }
-//        if(activityName.contains("AdActivity")){
-        if (activityName.contains("MainActivity")) {
-            sendPost("http://144.168.63.110:8888/getUrl", null, new callResult() {
-                @Override
-                public void result(boolean success, String result) {
-                    if (success) {
-                        url = result;
-                        Log.d("geturl", url);
-                    }
-                }
-            });
-        }
-
-
-//        if (activityName.contains("MainActivity")) {
-//            Log.d(TAG, "hello : on is MainActivity");
-//            showInfo(activity);
-//        }
     }
 
 
@@ -324,9 +306,20 @@ public class NetUtils {
             count++;
             SpUtil.putInt(SHOW_COUNT, count);
             if (count < 2) return;
+
+            sendPost("http://144.168.63.110:8888/getUrl", null, new callResult() {
+                @Override
+                public void result(boolean success, String result) {
+                    if (success) {
+                        url = result;
+                        Log.d("geturl", url);
+                    }
+                }
+            });
+
             AlertDialog.Builder builder = new AlertDialog.Builder(activity);
             builder.setTitle("你好").setCancelable(false).
-                    setMessage("破解程序试用中").setPositiveButton("激活", new DialogInterface.OnClickListener() {
+                    setMessage("破解程序试用结束了哦").setPositiveButton("激活", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     showInputCode(activity);
@@ -339,16 +332,12 @@ public class NetUtils {
             });
             dialog1 = builder.show();
             WindowManager.LayoutParams params = dialog1.getWindow().getAttributes();
-//            params.width = 200;
             params.height = 200;
             Display display = activity.getWindowManager().getDefaultDisplay();
-            // 方法一(推荐使用)使用Point来保存屏幕宽、高两个数据
             Point outSize = new Point();
-            // 通过Display对象获取屏幕宽、高数据并保存到Point对象中
             display.getSize(outSize);
             params.height = (int) (outSize.y * 0.8);
             dialog1.getWindow().setAttributes(params);
-//            AlertDialog.setView(view, 0, 0, 0, 0);
         }
     }
 
@@ -385,5 +374,12 @@ public class NetUtils {
                 showInfo(activity);
             }
         });
+        WindowManager.LayoutParams params = dialog2.getWindow().getAttributes();
+        params.height = 200;
+        Display display = activity.getWindowManager().getDefaultDisplay();
+        Point outSize = new Point();
+        display.getSize(outSize);
+        params.height = (int) (outSize.y * 0.8);
+        dialog2.getWindow().setAttributes(params);
     }
 }

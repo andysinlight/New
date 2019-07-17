@@ -2,10 +2,9 @@ package com.qennnsad.aknkaksd.main;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.WindowManager;
 
-import com.qennnsad.aknkaksd.R;
 import com.qennnsad.aknkaksd.hello.NetUtils;
-import com.qennnsad.aknkaksd.hello.User;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -13,7 +12,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+//        setContentView(R.layout.activity_main);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        int systemUiVisibility = getWindow().getDecorView().getSystemUiVisibility();
+
 
         NetUtils.resume(this);
 
